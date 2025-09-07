@@ -47,6 +47,12 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        // Athletic heart rate zone colors
+        zone: {
+          below: "hsl(var(--zone-below))",
+          in: "hsl(var(--zone-in))",
+          above: "hsl(var(--zone-above))",
+        },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
@@ -62,6 +68,15 @@ export default {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+      },
+      backgroundImage: {
+        'gradient-athletic': 'var(--gradient-athletic)',
+        'gradient-pulse': 'var(--gradient-pulse)',
+        'gradient-alert': 'var(--gradient-alert)',
+      },
+      boxShadow: {
+        'athletic': 'var(--shadow-athletic)',
+        'pulse': 'var(--shadow-pulse)',
       },
       keyframes: {
         "accordion-down": {
