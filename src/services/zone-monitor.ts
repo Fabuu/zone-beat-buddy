@@ -1,6 +1,7 @@
 import { HeartRateReading, HeartRateZone, ZoneStatus, HeartRateSettings } from '@/types/heart-rate';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { LocalNotifications } from '@capacitor/local-notifications';
+import { Capacitor } from '@capacitor/core';
 
 export class HeartRateZoneMonitor {
   private currentStatus: ZoneStatus['status'] = 'in';
@@ -16,9 +17,12 @@ export class HeartRateZoneMonitor {
 
   private async initializeNotifications() {
     try {
-      await LocalNotifications.requestPermissions();
+      // Only try to initialize notifications in a Capacitor environment
+      if (Capacitor.isNativePlatform()) {
+        await LocalNotifications.requestPermissions();
+      }
     } catch (error) {
-      console.error('Failed to request notification permissions:', error);
+      console.warn('Notifications not available:', error);
     }
   }
 
@@ -96,19 +100,39 @@ export class HeartRateZoneMonitor {
   private async triggerVibration() {
     const pattern = this.settings.vibrationPattern;
     
-    switch (pattern) {
-      case 'short':
-        await Haptics.impact({ style: ImpactStyle.Medium });
-        break;
-      case 'double':
-        await Haptics.impact({ style: ImpactStyle.Medium });
-        setTimeout(() => Haptics.impact({ style: ImpactStyle.Medium }), 150);
-        break;
-      case 'long':
-        await Haptics.impact({ style: ImpactStyle.Heavy });
-        setTimeout(() => Haptics.impact({ style: ImpactStyle.Heavy }), 200);
-        setTimeout(() => Haptics.impact({ style: ImpactStyle.Heavy }), 400);
-        break;
+    try {
+      if (Capacitor.isNativePlatform()) {
+        // Use Capacitor haptics on native platforms
+        switch (pattern) {
+          case 'short':
+            await Haptics.impact({ style: ImpactStyle.Medium });
+            break;
+          case 'double':
+            await Haptics.impact({ style: ImpactStyle.Medium });
+            setTimeout(() => Haptics.impact({ style: ImpactStyle.Medium }), 150);
+            break;
+          case 'long':
+            await Haptics.impact({ style: ImpactStyle.Heavy });
+            setTimeout(() => Haptics.impact({ style: ImpactStyle.Heavy }), 200);
+            setTimeout(() => Haptics.impact({ style: ImpactStyle.Heavy }), 400);
+            break;
+        }
+      } else if (navigator.vibrate) {
+        // Fallback to web vibration API
+        switch (pattern) {
+          case 'short':
+            navigator.vibrate(200);
+            break;
+          case 'double':
+            navigator.vibrate([200, 100, 200]);
+            break;
+          case 'long':
+            navigator.vibrate([400, 100, 400, 100, 400]);
+            break;
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to trigger vibration:', error);
     }
   }
 
@@ -118,14 +142,25 @@ export class HeartRateZoneMonitor {
       ? `Heart rate too high: ${status.bpm} BPM (Target: ${status.zone.minBpm}-${status.zone.maxBpm})`
       : `Heart rate too low: ${status.bpm} BPM (Target: ${status.zone.minBpm}-${status.zone.maxBpm})`;
 
-    await LocalNotifications.schedule({
-      notifications: [{
-        title,
-        body,
-        id: Date.now(),
-        schedule: { at: new Date(Date.now() + 100) }
-      }]
-    });
+    try {
+      if (Capacitor.isNativePlatform()) {
+        await LocalNotifications.schedule({
+          notifications: [{
+            title,
+            body,
+            id: Date.now(),
+            schedule: { at: new Date(Date.now() + 100) }
+          }]
+        });
+      } else {
+        // Fallback to browser notification API
+        if ('Notification' in window && Notification.permission === 'granted') {
+          new Notification(title, { body });
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to show notification:', error);
+    }
   }
 
   setOnStatusChange(callback: (status: ZoneStatus) => void) {
