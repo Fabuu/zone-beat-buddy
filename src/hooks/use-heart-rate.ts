@@ -22,13 +22,19 @@ export function useHeartRate() {
   useEffect(() => {
     // Set up bluetooth service callbacks
     bluetoothService.setOnHeartRateChange((reading: HeartRateReading) => {
+      console.log('Heart rate reading received:', reading);
       setCurrentReading(reading);
-      const status = zoneMonitor.processHeartRate(reading);
-      setZoneStatus(status);
+      try {
+        const status = zoneMonitor.processHeartRate(reading);
+        setZoneStatus(status);
+      } catch (error) {
+        console.error('Zone monitor error:', error);
+      }
       setError(null);
     });
 
     bluetoothService.setOnConnectionChange((connected: boolean) => {
+      console.log('Connection status changed:', connected);
       setIsConnected(connected);
       setIsConnecting(false);
       
@@ -39,19 +45,31 @@ export function useHeartRate() {
         setConnectedDevice(null);
         setCurrentReading(null);
         setZoneStatus(null);
-        zoneMonitor.reset();
+        try {
+          zoneMonitor.reset();
+        } catch (error) {
+          console.error('Zone monitor reset error:', error);
+        }
       }
     });
 
     // Set up zone monitor callback
-    zoneMonitor.setOnStatusChange((status: ZoneStatus) => {
-      setZoneStatus(status);
-    });
+    try {
+      zoneMonitor.setOnStatusChange((status: ZoneStatus) => {
+        setZoneStatus(status);
+      });
+    } catch (error) {
+      console.error('Zone monitor setup error:', error);
+    }
 
     return () => {
       bluetoothService.setOnHeartRateChange(() => {});
       bluetoothService.setOnConnectionChange(() => {});
-      zoneMonitor.setOnStatusChange(() => {});
+      try {
+        zoneMonitor.setOnStatusChange(() => {});
+      } catch (error) {
+        console.error('Zone monitor cleanup error:', error);
+      }
     };
   }, [zoneMonitor]);
 
