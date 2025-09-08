@@ -23,23 +23,10 @@ export function DeviceScanner({ onDeviceSelect, isConnecting, error }: DeviceSca
     setDevices([]);
 
     try {
-      // Simulate device scan by directly requesting device
-      if (!navigator.bluetooth) {
-        throw new Error('Web Bluetooth is not supported on this device');
-      }
-
-      const device = await navigator.bluetooth.requestDevice({
-        filters: [{ services: ['0000180d-0000-1000-8000-00805f9b34fb'] }],
-        optionalServices: ['0000180d-0000-1000-8000-00805f9b34fb']
-      });
-
-      const heartRateDevice: BluetoothDevice = {
-        id: device.id,
-        name: device.name || 'Unknown Heart Rate Device',
-        connected: false
-      };
-
-      setDevices([heartRateDevice]);
+      // Use the bluetooth service to scan for devices
+      const { bluetoothService } = await import('@/services/bluetooth-service');
+      const foundDevices = await bluetoothService.scanForDevices();
+      setDevices(foundDevices);
     } catch (error) {
       if (error instanceof Error) {
         if (error.name === 'NotFoundError') {
