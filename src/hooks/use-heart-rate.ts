@@ -34,7 +34,7 @@ export function useHeartRate() {
     });
 
     bluetoothService.setOnConnectionChange((connected: boolean) => {
-      console.log('Connection status changed:', connected);
+      console.log('useHeartRate - Connection status changed:', connected);
       setIsConnected(connected);
       setIsConnecting(false);
       
@@ -52,6 +52,14 @@ export function useHeartRate() {
         }
       }
     });
+
+    // Check initial connection state
+    const initialConnectionState = bluetoothService.isConnected();
+    console.log('useHeartRate - Initial connection state:', initialConnectionState);
+    if (initialConnectionState) {
+      setIsConnected(true);
+      setConnectedDevice(bluetoothService.getConnectedDevice());
+    }
 
     // Set up zone monitor callback
     try {
