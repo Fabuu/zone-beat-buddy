@@ -2,6 +2,7 @@ import { HEART_RATE_SERVICE_UUID, HEART_RATE_MEASUREMENT_UUID, HeartRateReading,
 
 export class BluetoothHeartRateService {
   private device: BluetoothDevice | null = null;
+  private bluetoothDevice: any = null; // Store the actual Web Bluetooth device
   private server: BluetoothRemoteGATTServer | null = null;
   private characteristic: BluetoothRemoteGATTCharacteristic | null = null;
   private onHeartRateChange: ((reading: HeartRateReading) => void) | null = null;
@@ -20,6 +21,9 @@ export class BluetoothHeartRateService {
         optionalServices: [HEART_RATE_SERVICE_UUID]
       });
 
+      // Store the selected device for later connection
+      this.bluetoothDevice = device;
+
       return [{
         id: device.id,
         name: device.name || 'Unknown Device',
@@ -33,14 +37,12 @@ export class BluetoothHeartRateService {
 
   async connect(deviceId: string): Promise<void> {
     try {
-      if (!navigator.bluetooth) {
-        throw new Error('Web Bluetooth not supported');
+      if (!this.bluetoothDevice) {
+        throw new Error('No device selected. Please scan for devices first.');
       }
 
-      const device = await navigator.bluetooth.requestDevice({
-        filters: [{ services: [HEART_RATE_SERVICE_UUID] }],
-        optionalServices: [HEART_RATE_SERVICE_UUID]
-      });
+      // Use the already selected device instead of requesting again
+      const device = this.bluetoothDevice;
 
       this.device = {
         id: device.id,
