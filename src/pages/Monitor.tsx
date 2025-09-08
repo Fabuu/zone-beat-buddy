@@ -25,6 +25,9 @@ export default function Monitor() {
   const [isBackgroundMode, setIsBackgroundMode] = useState(false);
   const navigate = useNavigate();
 
+  // Debug logging for connection state
+  console.log('Monitor - isConnected:', isConnected, 'currentReading:', currentReading, 'connectedDevice:', connectedDevice);
+
   const handleDisconnect = async () => {
     await disconnect();
     navigate('/');
