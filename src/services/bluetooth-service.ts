@@ -37,10 +37,15 @@ export class BluetoothHeartRateService {
 
   async connect(deviceId: string): Promise<void> {
     try {
+      console.log('Connect attempt started for device:', deviceId);
+      
       if (!this.bluetoothDevice) {
+        console.error('No bluetooth device stored');
         throw new Error('No device selected. Please scan for devices first.');
       }
 
+      console.log('Using stored device:', this.bluetoothDevice.name);
+      
       // Use the already selected device instead of requesting again
       const device = this.bluetoothDevice;
 
@@ -50,22 +55,30 @@ export class BluetoothHeartRateService {
         connected: false
       };
 
+      console.log('Adding disconnect listener...');
       device.addEventListener('gattserverdisconnected', this.handleDisconnection.bind(this));
 
+      console.log('Connecting to GATT server...');
       this.server = await device.gatt?.connect();
       if (!this.server) throw new Error('Failed to connect to GATT server');
 
+      console.log('Getting heart rate service...');
       const service = await this.server.getPrimaryService(HEART_RATE_SERVICE_UUID);
+      
+      console.log('Getting heart rate characteristic...');
       this.characteristic = await service.getCharacteristic(HEART_RATE_MEASUREMENT_UUID);
 
+      console.log('Starting notifications...');
       await this.characteristic.startNotifications();
       this.characteristic.addEventListener('characteristicvaluechanged', this.handleHeartRateChange.bind(this));
 
+      console.log('Connection successful!');
       this.device.connected = true;
       this.reconnectAttempts = 0;
       this.onConnectionChange?.(true);
     } catch (error) {
       console.error('Error connecting to device:', error);
+      this.onConnectionChange?.(false);
       throw error;
     }
   }
