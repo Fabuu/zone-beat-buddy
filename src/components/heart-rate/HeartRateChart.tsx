@@ -10,49 +10,38 @@ interface HeartRateChartProps {
 }
 
 export function HeartRateChart({ data, settings, className }: HeartRateChartProps) {
-  const [yAxisRange, setYAxisRange] = useState<{ min: number; max: number }>({ min: 50, max: 200 });
-  const [lastRangeUpdate, setLastRangeUpdate] = useState<number>(Date.now());
-
   const chartData = useMemo(() => {
-    if (!data.length) return [];
+    if (!data.length) return { inZone: [], outZone: [] };
     
     // Sort by timestamp and create chart points
     const sortedData = [...data].sort((a, b) => a.timestamp - b.timestamp);
     const now = Date.now();
     
-    return sortedData.map((reading, index) => ({
-      time: Math.round((reading.timestamp - now) / 1000), // Seconds ago (negative)
-      bpm: reading.bpm,
-      inZone: reading.bpm >= settings.targetZone.minBpm && reading.bpm <= settings.targetZone.maxBpm,
-      index
-    }));
+    const inZoneData: any[] = [];
+    const outZoneData: any[] = [];
+    
+    sortedData.forEach((reading, index) => {
+      const point = {
+        time: Math.round((reading.timestamp - now) / 1000), // Seconds ago (negative)
+        bpm: reading.bpm,
+        index
+      };
+      
+      const isInZone = reading.bpm >= settings.targetZone.minBpm && reading.bpm <= settings.targetZone.maxBpm;
+      
+      if (isInZone) {
+        inZoneData.push(point);
+        outZoneData.push({ ...point, bpm: null }); // null to break the line
+      } else {
+        outZoneData.push(point);
+        inZoneData.push({ ...point, bpm: null }); // null to break the line
+      }
+    });
+    
+    return { inZone: inZoneData, outZone: outZoneData };
   }, [data, settings.targetZone]);
 
-  // Update Y-axis range only every minute
-  useEffect(() => {
-    if (!chartData.length) return;
-    
-    const now = Date.now();
-    const shouldUpdate = now - lastRangeUpdate > 60000; // 1 minute
-    
-    if (shouldUpdate) {
-      const currentBpms = chartData.map(d => d.bpm);
-      const dataMin = Math.min(...currentBpms);
-      const dataMax = Math.max(...currentBpms);
-      const range = dataMax - dataMin;
-      const padding = Math.max(15, range * 0.3);
-      const minBpm = Math.max(50, dataMin - padding);
-      const maxBpm = Math.min(220, dataMax + padding);
-      
-      setYAxisRange({ min: minBpm, max: maxBpm });
-      setLastRangeUpdate(now);
-    }
-  }, [chartData, lastRangeUpdate]);
-
-  // Check if current reading is in zone for line color
-  const isCurrentlyInZone = chartData.length > 0 ? chartData[chartData.length - 1]?.inZone : false;
-
-  if (!chartData.length) {
+  if (!data.length) {
     return (
       <Card className={className}>
         <CardContent className="p-4">
@@ -64,6 +53,11 @@ export function HeartRateChart({ data, settings, className }: HeartRateChartProp
     );
   }
 
+  // Combine all data points for the chart
+  const allData = [...chartData.inZone, ...chartData.outZone]
+    .filter(point => point.bpm !== null)
+    .sort((a, b) => a.time - b.time);
+
   return (
     <Card className={className}>
       <CardContent className="p-4">
@@ -72,7 +66,7 @@ export function HeartRateChart({ data, settings, className }: HeartRateChartProp
         </div>
         <div className="h-48">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData} margin={{ top: 10, right: 15, left: 15, bottom: 10 }}>
+            <LineChart data={allData} margin={{ top: 10, right: 15, left: 15, bottom: 10 }}>
               <ReferenceArea
                 y1={settings.targetZone.minBpm}
                 y2={settings.targetZone.maxBpm}
@@ -82,30 +76,43 @@ export function HeartRateChart({ data, settings, className }: HeartRateChartProp
                 strokeOpacity={0.3}
                 strokeDasharray="2 2"
               />
-              <XAxis
+              <XAxis 
                 dataKey="time"
                 type="number"
                 scale="linear"
                 domain={[-20, 0]}
-                tickFormatter={(value) => `${value}s`}
                 axisLine={false}
                 tickLine={false}
-                tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                tick={false}
               />
               <YAxis 
-                domain={[yAxisRange.min, yAxisRange.max]}
+                domain={[50, 200]}
                 axisLine={false}
                 tickLine={false}
                 tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
                 width={30}
               />
+              {/* Blue line for out-of-zone values */}
               <Line
                 type="monotone"
                 dataKey="bpm"
-                stroke={isCurrentlyInZone ? "hsl(var(--zone-in))" : "hsl(var(--primary))"}
+                data={chartData.outZone}
+                stroke="hsl(var(--primary))"
                 strokeWidth={2}
                 dot={false}
-                activeDot={{ r: 3, fill: isCurrentlyInZone ? "hsl(var(--zone-in))" : "hsl(var(--primary))" }}
+                activeDot={{ r: 3, fill: "hsl(var(--primary))" }}
+                connectNulls={false}
+              />
+              {/* Green line for in-zone values */}
+              <Line
+                type="monotone"
+                dataKey="bpm"
+                data={chartData.inZone}
+                stroke="hsl(var(--zone-in))"
+                strokeWidth={2}
+                dot={false}
+                activeDot={{ r: 3, fill: "hsl(var(--zone-in))" }}
+                connectNulls={false}
               />
             </LineChart>
           </ResponsiveContainer>
