@@ -36,9 +36,14 @@ export function HeartRateChart({ data, settings, className }: HeartRateChartProp
     );
   }
 
-  // Fixed Y-axis scale for better visibility
-  const minBpm = 50;
-  const maxBpm = 200;
+  // Dynamic Y-axis scale focused on actual data range
+  const currentBpms = chartData.map(d => d.bpm);
+  const dataMin = Math.min(...currentBpms);
+  const dataMax = Math.max(...currentBpms);
+  const range = dataMax - dataMin;
+  const padding = Math.max(15, range * 0.3); // At least 15 BPM padding
+  const minBpm = Math.max(50, dataMin - padding);
+  const maxBpm = Math.min(220, dataMax + padding);
 
   return (
     <Card className={className}>
