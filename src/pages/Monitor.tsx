@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BPMDisplay } from '@/components/heart-rate/BPMDisplay';
 import { SettingsPanel } from '@/components/heart-rate/SettingsPanel';
+import { HeartRateChart } from '@/components/heart-rate/HeartRateChart';
 import { useHeartRate } from '@/hooks/use-heart-rate';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -17,6 +18,7 @@ export default function Monitor() {
     connectedDevice,
     settings,
     error,
+    heartRateHistory,
     disconnect,
     updateSettings,
   } = useHeartRate();
@@ -118,11 +120,15 @@ export default function Monitor() {
       )}
 
       {/* Main Display */}
-      <div className="flex-1 flex items-center justify-center p-8">
+      <div className="flex-1 flex flex-col items-center justify-center p-8 space-y-6">
         <BPMDisplay
           reading={currentReading}
           zoneStatus={zoneStatus}
           className="animate-fade-in-up"
+        />
+        <HeartRateChart 
+          data={heartRateHistory}
+          className="w-full max-w-md animate-fade-in-up"
         />
       </div>
 

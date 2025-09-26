@@ -11,6 +11,7 @@ export function useHeartRate() {
   const [settings, setSettings] = useState<HeartRateSettings>(DEFAULT_SETTINGS);
   const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [heartRateHistory, setHeartRateHistory] = useState<HeartRateReading[]>([]);
 
   // Initialize zone monitor
   const [zoneMonitor] = useState(() => new HeartRateZoneMonitor(settings));
@@ -24,6 +25,14 @@ export function useHeartRate() {
     bluetoothService.setOnHeartRateChange((reading: HeartRateReading) => {
       console.log('Heart rate reading received:', reading);
       setCurrentReading(reading);
+      
+      // Add to history (keep last 20 seconds)
+      setHeartRateHistory(prev => {
+        const newHistory = [...prev, reading];
+        const twentySecondsAgo = Date.now() - 20000;
+        return newHistory.filter(r => r.timestamp > twentySecondsAgo);
+      });
+      
       try {
         const status = zoneMonitor.processHeartRate(reading);
         setZoneStatus(status);
@@ -45,6 +54,7 @@ export function useHeartRate() {
         setConnectedDevice(null);
         setCurrentReading(null);
         setZoneStatus(null);
+        setHeartRateHistory([]);
         try {
           zoneMonitor.reset();
         } catch (error) {
@@ -128,6 +138,7 @@ export function useHeartRate() {
     connectedDevice,
     settings,
     error,
+    heartRateHistory,
     scanForDevices,
     connect,
     disconnect,
