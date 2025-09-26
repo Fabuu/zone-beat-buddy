@@ -1,14 +1,15 @@
 import { useMemo } from 'react';
-import { LineChart, Line, XAxis, YAxis, ResponsiveContainer } from 'recharts';
-import { HeartRateReading } from '@/types/heart-rate';
+import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, ReferenceArea } from 'recharts';
+import { HeartRateReading, HeartRateSettings } from '@/types/heart-rate';
 import { Card, CardContent } from '@/components/ui/card';
 
 interface HeartRateChartProps {
   data: HeartRateReading[];
+  settings: HeartRateSettings;
   className?: string;
 }
 
-export function HeartRateChart({ data, className }: HeartRateChartProps) {
+export function HeartRateChart({ data, settings, className }: HeartRateChartProps) {
   const chartData = useMemo(() => {
     if (!data.length) return [];
     
@@ -27,7 +28,7 @@ export function HeartRateChart({ data, className }: HeartRateChartProps) {
     return (
       <Card className={className}>
         <CardContent className="p-4">
-          <div className="h-32 flex items-center justify-center text-muted-foreground">
+          <div className="h-48 flex items-center justify-center text-muted-foreground">
             Waiting for heart rate data...
           </div>
         </CardContent>
@@ -35,8 +36,9 @@ export function HeartRateChart({ data, className }: HeartRateChartProps) {
     );
   }
 
-  const minBpm = Math.max(50, Math.min(...chartData.map(d => d.bpm)) - 10);
-  const maxBpm = Math.min(220, Math.max(...chartData.map(d => d.bpm)) + 10);
+  // Fixed Y-axis scale for better visibility
+  const minBpm = 50;
+  const maxBpm = 200;
 
   return (
     <Card className={className}>
@@ -44,10 +46,19 @@ export function HeartRateChart({ data, className }: HeartRateChartProps) {
         <div className="mb-2">
           <h3 className="text-sm font-medium text-muted-foreground">Last 20 Seconds</h3>
         </div>
-        <div className="h-32">
+        <div className="h-48">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
-              <XAxis 
+            <LineChart data={chartData} margin={{ top: 10, right: 15, left: 15, bottom: 10 }}>
+              <ReferenceArea
+                y1={settings.targetZone.minBpm}
+                y2={settings.targetZone.maxBpm}
+                fill="hsl(var(--primary))"
+                fillOpacity={0.1}
+                stroke="hsl(var(--primary))"
+                strokeOpacity={0.3}
+                strokeDasharray="2 2"
+              />
+              <XAxis
                 dataKey="time"
                 type="number"
                 scale="linear"

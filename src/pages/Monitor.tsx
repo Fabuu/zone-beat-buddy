@@ -128,6 +128,7 @@ export default function Monitor() {
         />
         <HeartRateChart 
           data={heartRateHistory}
+          settings={settings}
           className="w-full max-w-md animate-fade-in-up"
         />
       </div>
